@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI CRM Automation</title>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-2: #242836;
+            --border: #2e3345;
+            --text: #e1e4ed;
+            --text-muted: #8b8fa3;
+            --primary: #6366f1;
+            --primary-hover: #818cf8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .app { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 240px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            padding: 0 20px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.15s;
+        }
+
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            color: var(--text);
+            background: var(--surface-2);
+        }
+
+        .sidebar-nav a.active { border-right: 2px solid var(--primary); }
+
+        .main { flex: 1; display: flex; flex-direction: column; }
+
+        .topbar {
+            height: 56px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .topbar-title { font-size: 16px; font-weight: 600; }
+
+        .content { flex: 1; padding: 24px; overflow-y: auto; }
+
+        /* Auth */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            width: 400px;
+        }
+
+        .auth-card h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .auth-card p { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
+
+        /* Form */
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+        /* Badges */
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-new { background: #1e3a5f; color: #60a5fa; }
+        .badge-processing { background: #3b2f0a; color: #fbbf24; }
+        .badge-needs_review { background: #3b2f0a; color: #f59e0b; }
+        .badge-approved { background: #0a3622; color: #4ade80; }
+        .badge-synced { background: #0f2b1e; color: #22c55e; }
+        .badge-failed { background: #3b0f0f; color: #f87171; }
+        .badge-web_form { background: #1a1a3e; color: #a78bfa; }
+        .badge-email { background: #1a2e3e; color: #67e8f9; }
+        .badge-csv_upload { background: #2e2a1a; color: #fcd34d; }
+
+        .badge-pending { background: #1e293b; color: #94a3b8; }
+        .badge-running { background: #3b2f0a; color: #fbbf24; }
+        .badge-succeeded { background: #0a3622; color: #4ade80; }
+        .badge-skipped { background: #1e293b; color: #64748b; }
+
+        /* Table */
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(99, 102, 241, 0.04); }
+        td a { color: var(--primary); text-decoration: none; }
+        td a:hover { text-decoration: underline; }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .metric-value { font-size: 28px; font-weight: 700; }
+        .metric-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        /* Detail page */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .detail-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .detail-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .detail-row:last-child { border-bottom: none; }
+        .detail-key { color: var(--text-muted); }
+
+        /* Raw payload */
+        .raw-payload {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Timeline */
+        .timeline { position: relative; padding-left: 24px; }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -20px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+
+        .timeline-dot.succeeded { background: var(--success); }
+        .timeline-dot.failed { background: var(--danger); }
+        .timeline-dot.running { background: var(--warning); }
+        .timeline-dot.pending { background: var(--text-muted); }
+
+        .timeline-content {
+            background: var(--surface-2);
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .timeline-step { font-weight: 600; font-size: 14px; }
+        .timeline-time { font-size: 12px; color: var(--text-muted); }
+        .timeline-error { color: var(--danger); font-size: 13px; margin-top: 4px; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+        }
+
+        .pagination-info { font-size: 13px; color: var(--text-muted); }
+
+        /* Filters bar */
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .filters select, .filters input { width: auto; min-width: 150px; }
+
+        /* Utility */
+        .full-width { grid-column: 1 / -1; }
+        .mt-16 { margin-top: 16px; }
+        .mb-16 { margin-bottom: 16px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .hidden { display: none !important; }
+        .error-text { color: var(--danger); font-size: 13px; margin-top: 8px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state p { font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="auth-container">
+    <div class="auth-card">
+        <h1>AI CRM Automation</h1>
+        <p>Sign in to manage your lead pipeline</p>
+        <div id="auth-error" class="error-text hidden"></div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="auth-email" placeholder="you@company.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="auth-password" placeholder="Password">
+        </div>
+        <div style="display:flex;gap:12px;margin-top:20px;">
+            <button class="btn btn-primary" style="flex:1" onclick="doLogin()">Sign In</button>
+            <button class="btn btn-ghost" style="flex:1" onclick="doRegister()">Register</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main App -->
+<div id="app-screen" class="app hidden">
+    <nav class="sidebar">
+        <div class="sidebar-logo">AI CRM</div>
+        <div class="sidebar-nav">
+            <a href="#" data-page="dashboard" class="active" onclick="navigate('dashboard')">Dashboard</a>
+            <a href="#" data-page="leads" onclick="navigate('leads')">Leads</a>
+            <a href="#" data-page="workflows" onclick="navigate('workflows')">Workflows</a>
+        </div>
+        <div style="position:absolute;bottom:20px;left:0;right:0;padding:0 20px;">
+            <button class="btn btn-ghost btn-sm" style="width:100%" onclick="doLogout()">Sign Out</button>
+        </div>
+    </nav>
+
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-title" id="page-title">Dashboard</div>
+            <div style="display:flex;gap:12px;">
+                <button class="btn btn-sm btn-ghost" onclick="showUploadModal()">Upload CSV</button>
+                <button class="btn btn-sm btn-primary" onclick="showTestLeadModal()">+ Test Lead</button>
+            </div>
+        </div>
+
+        <div class="content" id="page-content"></div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="upload-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;">
+    <div class="auth-card" style="width:450px;">
+        <h1 style="font-size:18px;">Upload CSV</h1>
+        <p>Upload a CSV file with lead data (max 10MB)</p>
+        <div class="form-group">
+            <input type="file" id="csv-file" accept=".csv" style="padding:8px;">
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button class="btn btn-primary" onclick="uploadCsv()">Upload</button>
+            <button class="btn btn-ghost" onclick="hideModal('upload-modal')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Test Lead Modal -->
+<div id="test-lead-modal" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;">
+    <div class="auth-card" style="width:500px;">
+        <h1 style="font-size:18px;">Send Test Lead</h1>
+        <p>Submit a test lead via the webhook endpoint</p>
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="test-name" placeholder="Jane Doe">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="test-email" placeholder="jane@acme.com">
+        </div>
+        <div class="form-group">
+            <label>Company</label>
+            <input type="text" id="test-company" placeholder="Acme Inc">
+        </div>
+        <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="test-phone" placeholder="+1 555 123 4567">
+        </div>
+        <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="test-title" placeholder="VP of Sales">
+        </div>
+        <div class="form-group">
+            <label>Message / Context</label>
+            <input type="text" id="test-message" placeholder="I'd like a demo of your product">
+        </div>
+        <div style="display:flex;gap:12px;">
+            <button class="btn btn-primary" onclick="sendTestLead()">Send Lead</button>
+            <button class="btn btn-ghost" onclick="hideModal('test-lead-modal')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('token');
+let currentPage = 'dashboard';
+let leadsPage = 1;
+let workflowsPage = 1;
+
+// ── Auth ───
+async function api(method, path, body) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + path, opts);
+    if (res.status === 401 || res.status === 403) {
+        if (path !== '/auth/login' && path !== '/auth/register') { doLogout(); return null; }
+    }
+    return res;
+}
+
+async function doLogin() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const res = await api('POST', '/auth/login', { email, password });
+    if (res.ok) {
+        const data = await res.json();
+        token = data.access_token;
+        localStorage.setItem('token', token);
+        showApp();
+    } else {
+        showAuthError('Invalid credentials');
+    }
+}
+
+async function doRegister() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) { showAuthError('Email and password required'); return; }
+    const res = await api('POST', '/auth/register', { email, password });
+    if (res.ok) {
+        const data = await res.json();
+        token = data.access_token;
+        localStorage.setItem('token', token);
+        showApp();
+    } else {
+        const err = await res.json();
+        showAuthError(err.detail || 'Registration failed');
+    }
+}
+
+function doLogout() {
+    token = null;
+    localStorage.removeItem('token');
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+}
+
+function showApp() {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    navigate('dashboard');
+}
+
+// ── Navigation ───
+function navigate(page, params) {
+    currentPage = page;
+    document.querySelectorAll('.sidebar-nav a').forEach(a => {
+        a.classList.toggle('active', a.dataset.page === page);
+    });
+    const titles = { dashboard: 'Dashboard', leads: 'Leads', workflows: 'Workflows', 'lead-detail': 'Lead Detail' };
+    document.getElementById('page-title').textContent = titles[page] || page;
+
+    if (page === 'dashboard') renderDashboard();
+    else if (page === 'leads') renderLeads();
+    else if (page === 'workflows') renderWorkflows();
+    else if (page === 'lead-detail') renderLeadDetail(params);
+}
+
+// ── Dashboard ───
+async function renderDashboard() {
+    const res = await api('GET', '/metrics');
+    if (!res || !res.ok) { document.getElementById('page-content').innerHTML = '<div class="empty-state"><p>Failed to load metrics</p></div>'; return; }
+    const m = await res.json();
+
+    document.getElementById('page-content').innerHTML = `
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Processed</div>
+                <div class="metric-value">${m.total_processed}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Approved</div>
+                <div class="metric-value" style="color:var(--success)">${m.total_approved}</div>
+                <div class="metric-sub">${(m.approval_rate * 100).toFixed(1)}% approval rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Synced to CRM</div>
+                <div class="metric-value" style="color:var(--info)">${m.total_synced}</div>
+                <div class="metric-sub">${(m.sync_success_rate * 100).toFixed(1)}% sync rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Needs Review</div>
+                <div class="metric-value" style="color:var(--warning)">${m.total_needs_review}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Failed</div>
+                <div class="metric-value" style="color:var(--danger)">${m.total_failed}</div>
+                <div class="metric-sub">${(m.failure_rate * 100).toFixed(1)}% failure rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Latency</div>
+                <div class="metric-value">${m.avg_latency_seconds ? m.avg_latency_seconds.toFixed(1) + 's' : 'N/A'}</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="detail-card">
+                <h3>Leads by Source</h3>
+                ${Object.entries(m.leads_by_source).map(([k,v]) => `
+                    <div class="detail-row"><span class="detail-key">${k}</span><span>${v}</span></div>
+                `).join('') || '<div class="detail-row"><span class="detail-key">No data</span></div>'}
+            </div>
+            <div class="detail-card">
+                <h3>Leads by Intent</h3>
+                ${Object.entries(m.leads_by_intent).map(([k,v]) => `
+                    <div class="detail-row"><span class="detail-key">${k}</span><span>${v}</span></div>
+                `).join('') || '<div class="detail-row"><span class="detail-key">No data</span></div>'}
+            </div>
+        </div>
+    `;
+}
+
+// ── Leads ───
+async function renderLeads(page = 1) {
+    leadsPage = page;
+    const statusFilter = document.getElementById('filter-status')?.value || '';
+    const sourceFilter = document.getElementById('filter-source')?.value || '';
+    let url = `/leads?page=${page}&page_size=20`;
+    if (statusFilter) url += `&status=${statusFilter}`;
+    if (sourceFilter) url += `&source=${sourceFilter}`;
+
+    const res = await api('GET', url);
+    if (!res || !res.ok) return;
+    const data = await res.json();
+
+    const filtersHtml = `
+        <div class="filters">
+            <select id="filter-status" onchange="renderLeads(1)">
+                <option value="">All Statuses</option>
+                <option value="new" ${statusFilter==='new'?'selected':''}>New</option>
+                <option value="processing" ${statusFilter==='processing'?'selected':''}>Processing</option>
+                <option value="needs_review" ${statusFilter==='needs_review'?'selected':''}>Needs Review</option>
+                <option value="approved" ${statusFilter==='approved'?'selected':''}>Approved</option>
+                <option value="synced" ${statusFilter==='synced'?'selected':''}>Synced</option>
+                <option value="failed" ${statusFilter==='failed'?'selected':''}>Failed</option>
+            </select>
+            <select id="filter-source" onchange="renderLeads(1)">
+                <option value="">All Sources</option>
+                <option value="web_form" ${sourceFilter==='web_form'?'selected':''}>Web Form</option>
+                <option value="email" ${sourceFilter==='email'?'selected':''}>Email</option>
+                <option value="csv_upload" ${sourceFilter==='csv_upload'?'selected':''}>CSV Upload</option>
+            </select>
+            <span class="pagination-info">${data.total} leads total</span>
+        </div>
+    `;
+
+    if (data.items.length === 0) {
+        document.getElementById('page-content').innerHTML = filtersHtml + '<div class="empty-state"><p>No leads found</p></div>';
+        return;
+    }
+
+    const totalPages = Math.ceil(data.total / 20);
+    document.getElementById('page-content').innerHTML = filtersHtml + `
+        <div class="table-container">
+            <table>
+                <thead><tr>
+                    <th>Name</th><th>Email</th><th>Company</th><th>Intent</th><th>Score</th><th>Confidence</th><th>Source</th><th>Status</th><th>Created</th>
+                </tr></thead>
+                <tbody>
+                    ${data.items.map(l => `<tr style="cursor:pointer" onclick="navigate('lead-detail','${l.id}')">
+                        <td><a href="#">${l.name || '—'}</a></td>
+                        <td>${l.email || '—'}</td>
+                        <td>${l.company || '—'}</td>
+                        <td>${l.intent || '—'}</td>
+                        <td>${l.score}</td>
+                        <td>${(l.confidence_score * 100).toFixed(0)}%</td>
+                        <td><span class="badge badge-${l.source}">${l.source}</span></td>
+                        <td><span class="badge badge-${l.status}">${l.status}</span></td>
+                        <td>${new Date(l.created_at).toLocaleDateString()}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <div class="pagination">
+                <div class="pagination-info">Page ${page} of ${totalPages}</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-sm btn-ghost" ${page<=1?'disabled':''} onclick="renderLeads(${page-1})">Prev</button>
+                    <button class="btn btn-sm btn-ghost" ${page>=totalPages?'disabled':''} onclick="renderLeads(${page+1})">Next</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ── Lead Detail ───
+async function renderLeadDetail(leadId) {
+    const [leadRes, eventsRes, runsRes] = await Promise.all([
+        api('GET', `/leads/${leadId}`),
+        api('GET', `/leads/${leadId}/events`),
+        api('GET', `/workflow-runs?lead_id=${leadId}&page_size=100`),
+    ]);
+
+    if (!leadRes || !leadRes.ok) return;
+    const lead = await leadRes.json();
+    const events = eventsRes?.ok ? await eventsRes.json() : [];
+    const runsData = runsRes?.ok ? await runsRes.json() : { items: [] };
+    const runs = runsData.items || [];
+
+    const canApprove = lead.status === 'needs_review';
+
+    document.getElementById('page-content').innerHTML = `
+        <div style="margin-bottom:16px;">
+            <button class="btn btn-sm btn-ghost" onclick="navigate('leads')">Back to Leads</button>
+            ${canApprove ? `<button class="btn btn-sm btn-success" style="margin-left:8px" onclick="approveLead('${lead.id}')">Approve Lead</button>` : ''}
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-card">
+                <h3>Extracted Fields</h3>
+                <div class="detail-row"><span class="detail-key">Name</span><span>${lead.name || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Email</span><span>${lead.email || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Company</span><span>${lead.company || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Phone</span><span>${lead.phone || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Title</span><span>${lead.title || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Intent</span><span>${lead.intent}</span></div>
+                <div class="detail-row"><span class="detail-key">Score</span><span>${lead.score}/100</span></div>
+                <div class="detail-row"><span class="detail-key">Confidence</span><span>${(lead.confidence_score * 100).toFixed(0)}%</span></div>
+                <div class="detail-row"><span class="detail-key">Status</span><span class="badge badge-${lead.status}">${lead.status}</span></div>
+                <div class="detail-row"><span class="detail-key">Source</span><span class="badge badge-${lead.source}">${lead.source}</span></div>
+                <div class="detail-row"><span class="detail-key">CRM ID</span><span>${lead.crm_id || '—'}</span></div>
+                <div class="detail-row"><span class="detail-key">Created</span><span>${new Date(lead.created_at).toLocaleString()}</span></div>
+            </div>
+
+            <div class="detail-card">
+                <h3>Raw Input (Before)</h3>
+                <div class="raw-payload">${JSON.stringify(lead.raw_payload, null, 2)}</div>
+            </div>
+
+            <div class="detail-card full-width">
+                <h3>Workflow Timeline</h3>
+                ${runs.length === 0 ? '<div class="empty-state"><p>No workflow runs yet</p></div>' : `
+                    <div class="timeline">
+                        ${runs.map(r => `
+                            <div class="timeline-item">
+                                <div class="timeline-dot ${r.status}"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-step">${r.step_name}</span>
+                                        <span>
+                                            <span class="badge badge-${r.status}">${r.status}</span>
+                                            ${r.status === 'failed' ? `<button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="retryStep('${r.id}')">Retry</button>` : ''}
+                                        </span>
+                                    </div>
+                                    <div class="timeline-time">${new Date(r.created_at).toLocaleString()} (attempt #${r.attempt_number})</div>
+                                    ${r.error_message ? `<div class="timeline-error">${r.error_message}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </div>
+
+            <div class="detail-card full-width">
+                <h3>Events</h3>
+                ${events.length === 0 ? '<div class="empty-state"><p>No events yet</p></div>' : `
+                    <div class="table-container" style="border:none;">
+                        <table>
+                            <thead><tr><th>Type</th><th>Payload</th><th>Time</th></tr></thead>
+                            <tbody>
+                                ${events.map(e => `<tr>
+                                    <td>${e.event_type}</td>
+                                    <td style="font-family:monospace;font-size:12px;max-width:400px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(e.payload)}</td>
+                                    <td>${new Date(e.created_at).toLocaleString()}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+// ── Workflows ───
+async function renderWorkflows(page = 1) {
+    workflowsPage = page;
+    const statusFilter = document.getElementById('wf-filter-status')?.value || '';
+    let url = `/workflow-runs?page=${page}&page_size=30`;
+    if (statusFilter) url += `&status=${statusFilter}`;
+
+    const res = await api('GET', url);
+    if (!res || !res.ok) return;
+    const data = await res.json();
+
+    const filtersHtml = `
+        <div class="filters">
+            <select id="wf-filter-status" onchange="renderWorkflows(1)">
+                <option value="">All Statuses</option>
+                <option value="pending" ${statusFilter==='pending'?'selected':''}>Pending</option>
+                <option value="running" ${statusFilter==='running'?'selected':''}>Running</option>
+                <option value="succeeded" ${statusFilter==='succeeded'?'selected':''}>Succeeded</option>
+                <option value="failed" ${statusFilter==='failed'?'selected':''}>Failed</option>
+                <option value="skipped" ${statusFilter==='skipped'?'selected':''}>Skipped</option>
+            </select>
+            <span class="pagination-info">${data.total} runs total</span>
+        </div>
+    `;
+
+    if (data.items.length === 0) {
+        document.getElementById('page-content').innerHTML = filtersHtml + '<div class="empty-state"><p>No workflow runs found</p></div>';
+        return;
+    }
+
+    const totalPages = Math.ceil(data.total / 30);
+    document.getElementById('page-content').innerHTML = filtersHtml + `
+        <div class="table-container">
+            <table>
+                <thead><tr>
+                    <th>Lead</th><th>Step</th><th>Status</th><th>Attempt</th><th>Error</th><th>Time</th><th></th>
+                </tr></thead>
+                <tbody>
+                    ${data.items.map(r => `<tr>
+                        <td><a href="#" onclick="navigate('lead-detail','${r.lead_id}')">${r.lead_id.slice(0,8)}...</a></td>
+                        <td>${r.step_name}</td>
+                        <td><span class="badge badge-${r.status}">${r.status}</span></td>
+                        <td>#${r.attempt_number}</td>
+                        <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--danger);">${r.error_message || '—'}</td>
+                        <td>${new Date(r.created_at).toLocaleString()}</td>
+                        <td>${r.status === 'failed' ? `<button class="btn btn-sm btn-danger" onclick="retryStep('${r.id}')">Retry</button>` : ''}</td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <div class="pagination">
+                <div class="pagination-info">Page ${page} of ${totalPages}</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-sm btn-ghost" ${page<=1?'disabled':''} onclick="renderWorkflows(${page-1})">Prev</button>
+                    <button class="btn btn-sm btn-ghost" ${page>=totalPages?'disabled':''} onclick="renderWorkflows(${page+1})">Next</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// ── Actions ───
+async function approveLead(id) {
+    const res = await api('POST', `/leads/${id}/approve`);
+    if (res?.ok) navigate('lead-detail', id);
+}
+
+async function retryStep(runId) {
+    const res = await api('POST', `/workflow-runs/${runId}/retry`);
+    if (res?.ok) {
+        // Refresh current page
+        if (currentPage === 'lead-detail') {
+            const data = await res.json();
+            navigate('lead-detail', data.lead_id);
+        } else {
+            renderWorkflows(workflowsPage);
+        }
+    }
+}
+
+async function sendTestLead() {
+    const data = {
+        name: document.getElementById('test-name').value,
+        email: document.getElementById('test-email').value,
+        company: document.getElementById('test-company').value,
+        phone: document.getElementById('test-phone').value,
+        title: document.getElementById('test-title').value,
+        message: document.getElementById('test-message').value,
+    };
+
+    const res = await fetch(API + '/webhooks/lead', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': 'dev-webhook-api-key',
+            'X-Idempotency-Key': crypto.randomUUID(),
+        },
+        body: JSON.stringify({ source: 'web_form', data }),
+    });
+
+    hideModal('test-lead-modal');
+    if (res.ok) {
+        navigate('leads');
+    } else {
+        alert('Failed to send test lead');
+    }
+}
+
+async function uploadCsv() {
+    const fileInput = document.getElementById('csv-file');
+    if (!fileInput.files.length) return;
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    const res = await fetch(API + '/leads/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+    });
+
+    hideModal('upload-modal');
+    if (res.ok) {
+        navigate('leads');
+    } else {
+        alert('Upload failed');
+    }
+}
+
+function showUploadModal() { document.getElementById('upload-modal').classList.remove('hidden'); document.getElementById('upload-modal').style.display = 'flex'; }
+function showTestLeadModal() { document.getElementById('test-lead-modal').classList.remove('hidden'); document.getElementById('test-lead-modal').style.display = 'flex'; }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ── Init ───
+if (token) { showApp(); } else {
+    document.getElementById('auth-screen').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
