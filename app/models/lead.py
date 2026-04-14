@@ -38,7 +38,10 @@ class Lead(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    source: Mapped[str] = mapped_column(Enum(LeadSource), nullable=False)
+    source: Mapped[str] = mapped_column(
+        Enum(LeadSource, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     raw_payload: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=dict)
     name: Mapped[str | None] = mapped_column(Text)
@@ -47,11 +50,15 @@ class Lead(Base):
     phone: Mapped[str | None] = mapped_column(String(50))
     title: Mapped[str | None] = mapped_column(Text)
     intent: Mapped[str] = mapped_column(
-        Enum(LeadIntent), default=LeadIntent.UNKNOWN)
+        Enum(LeadIntent, values_callable=lambda x: [e.value for e in x]),
+        default=LeadIntent.UNKNOWN,
+    )
     score: Mapped[int] = mapped_column(Integer, default=0)
     confidence_score: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(
-        Enum(LeadStatus), default=LeadStatus.NEW)
+        Enum(LeadStatus, values_callable=lambda x: [e.value for e in x]),
+        default=LeadStatus.NEW,
+    )
     owner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True)
     crm_id: Mapped[str | None] = mapped_column(String(255))

@@ -27,7 +27,9 @@ class WorkflowRun(Base):
     )
     step_name: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(
-        Enum(WorkflowStepStatus), default=WorkflowStepStatus.PENDING
+        Enum(WorkflowStepStatus, values_callable=lambda x: [
+             e.value for e in x]),
+        default=WorkflowStepStatus.PENDING,
     )
     input_payload: Mapped[dict | None] = mapped_column(JSONB)
     output_payload: Mapped[dict | None] = mapped_column(JSONB)

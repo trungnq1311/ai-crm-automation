@@ -23,7 +23,10 @@ class DedupeKey(Base):
     lead_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("leads.id", ondelete="CASCADE"), nullable=False
     )
-    key_type: Mapped[str] = mapped_column(Enum(DedupeKeyType), nullable=False)
+    key_type: Mapped[str] = mapped_column(
+        Enum(DedupeKeyType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     key_value: Mapped[str] = mapped_column(String(512), nullable=False)
 
     lead = relationship("Lead", back_populates="dedupe_keys")
